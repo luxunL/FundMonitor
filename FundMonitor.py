@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import json
 import requests
 from lxml import etree
@@ -20,15 +17,17 @@ from email.mime.application import MIMEApplication
 from email.header import Header     
 
 def mail():
-    # 发件人地址，通过控制台创建的发件人地址
-    username = 'LuxunLServer@163.com'
-    # 发件人密码，通过控制台创建的发件人密码
-    password = "BGRHPCEFCKUGHLIZ"
-    # 自定义的回复地址
-    replyto = 'LuxunLServer@163.com'
-    # 收件人地址或是地址列表，支持多个收件人，最多60个
-    #rcptto = ['***', '***']
-    rcptto = 'Yujer233@qq.com'
+    with open('mail.ini','r') as f:
+        # 发件人地址，通过控制台创建的发件人地址
+        username = f.readline().strip()
+        # 发件人密码，通过控制台创建的发件人密码
+        password = f.readline().strip()
+        # 自定义的回复地址
+        replyto = username
+        # 收件人地址或是地址列表，支持多个收件人，最多60个
+        #rcptto = ['***', '***']
+        rcptto = [s.strip() for s in f.readlines()]
+        
     # 构建alternative结构
     msg = MIMEMultipart('alternative')
     
@@ -36,7 +35,7 @@ def mail():
         s = f.read()
     msg['Subject'] = Header(s.split('<h2>')[1].split('</h2>')[0])
     msg['From'] = '%s <%s>' % (Header(''), username)
-    msg['To'] = rcptto
+    msg['To'] = Header(','.join(rcptto))
     msg['Reply-to'] = replyto
     msg['Message-id'] = email.utils.make_msgid()
     msg['Date'] = email.utils.formatdate()
@@ -56,7 +55,7 @@ def mail():
         client.login(username, password)
         #发件人和认证地址必须一致
         #备注：若想取到DATA命令返回值,可参考smtplib的sendmaili封装方法:
-        #      使用SMTP.mail/SMTP.rcpt/SMTP.data方法
+        #使用SMTP.mail/SMTP.rcpt/SMTP.data方法
         client.sendmail(username, rcptto, msg.as_string())
         client.quit()
         print('邮件发送成功！')
@@ -75,55 +74,26 @@ def mail():
     except Exception as e:
         print('邮件发送异常, ', str(e))
 
-
-
-# In[2]:
-
-
-s = requests.Session()
-s.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-
-
-# In[3]:
-
-
-with open('fund.ini','r') as f:
-    list=[]
-    for line in f.readlines():
-        kv = line.strip().split()
-        list.append(kv)
-
-
-# In[4]:
-
-
 def str_rate(new,old):
     s = ''
     if new > old:
         s = '+'
     return s + format((new-old)/old*100,'.2f')+'%'
 
-
-# In[5]:
-
-
-code = '502023'
-code = str(code)
-url = 'https://fund.10jqka.com.cn/data/client/myfund/'+code
-res = s.get(url).json()['data'][0]
-hqcode = res['hqcode']
-url = 'https://gz-fund.10jqka.com.cn/?module=api&controller=index&action=chart&info=vm_fd_'+hqcode
-#print(url)
-gz_all_raw = s.get(url).content.decode().split(';')[1:]
-date_gz = gz_all_raw[0].split('~')[0].split('|')[1]
-gz_all_raw[0] = gz_all_raw[0].split('~')[-1]
-#gz_all_raw
-
-
-# In[6]:
-
+def wirte_front(fname,string):
+    f = open(fname,'r')
+    with open('tmp','w') as t:
+        t.write(string)
+        t.write(f.read())
+    f.close()    
+    t.close()
+    os.remove(fname)
+    os.rename('tmp',fname)
 
 def get(code):
+    s = requests.Session()
+    s.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+
     code = str(code)
     url = 'https://fund.10jqka.com.cn/data/client/myfund/'+code
     res = s.get(url).json()['data'][0]
@@ -136,7 +106,6 @@ def get(code):
     hqcode = res['hqcode']
     
     url = 'https://gz-fund.10jqka.com.cn/?module=api&controller=index&action=chart&info=vm_fd_'+hqcode
-    #print(url)
     gz_all_raw = s.get(url).content.decode().split(';')[1:]
     gzdate = gz_all_raw[0].split('~')[0].split('|')[1][5:]
     gz_all_raw[0] = gz_all_raw[0].split('~')[-1]
@@ -147,19 +116,13 @@ def get(code):
             
     return name+' '+code,gz_all,net,enddate,net1,gzdate
 
-
-# In[7]:
-
-
-STATE = 0
-# 0 还没开盘
-# 1 交易中
-# 2 收盘了
-# 3 中午休市
-# 4 净值更新了
-# 5 今天可能休市吧
-
 def state(gzdate,enddate,gz_all):
+    # 0 还没开盘
+    # 1 交易中
+    # 2 收盘了
+    # 3 中午休市
+    # 4 净值更新了
+    # 5 今天可能休市吧
     if gzdate == time.strftime('%m-%d'):
         if gzdate in enddate:
             s = '净值更新了!'
@@ -182,10 +145,6 @@ def state(gzdate,enddate,gz_all):
             
     return STATE,s
 
-
-# In[8]:
-
-
 def cal(gz_all,net,net1,share,STATE):
     if STATE in [0, 4, 5]:
         gz_now,gz_max,gz_min = (0,0,0)
@@ -201,52 +160,6 @@ def cal(gz_all,net,net1,share,STATE):
     
     return amount, delta, gz_now, gz_max, gz_min
 
-
-# In[9]:
-
-
-def str_final(name,gz_all,net,enddate,net1,share,STATE):
-    
-    amount, delta, gz_now, gz_max, gz_min = cal(gz_all,net,net1,share,STATE)
-    
-    if STATE in [1, 2, 3]:
-        gz_now = gz_all[-1]
-        gz_max = max(gz_all)
-        gz_min = min(gz_all)
-        amount = gz_now * share
-        delta = (gz_now - net)*share
-        gz_str = '盘中估值 '+str(gz_now)+' '+str_rate(gz_now,net)+'\n'
-        jz_str = '单位净值('+enddate[5:]+') '+str(net)+' '+str_rate(net,net1)+'\n'
-        gz_max_min_str = '目前最高/低估值 '+str(gz_max)+'/'+str(gz_min)+' '+str_rate(gz_max,net)+'/'+str_rate(gz_min,net)+'\n'
-        zjz_str = '总估值 '+format(gz_now*share,'.4f')+'元 '+ str_rate(gz_now,net)+'\n'
-    else:
-        amount = net * share
-        delta = (net - net1)*share
-        gz_str = ''
-        gz_max_min_str = ''
-        jz_str = '单位净值('+enddate[5:]+') '+str(net)+' '+str_rate(net,net1)+'\n'
-        zjz_str = '总净值 '+format(net*share,'.4f')+'元 ('+enddate+') '+ str_rate(gz_now,net)+'\n'
-    
-    if delta < 0:
-        s = 'T_T\n'
-    else:
-        s = '^_^\n'
-    return s + name+'\n' + gz_max_min_str + gz_str + jz_str + zjz_str + '\n'
-
-def wirte_front(fname,str):
-    f = open(fname,'r')
-    with open('tmp','w') as t:
-        t.write(str)
-        t.write(f.read())
-    f.close()    
-    t.close()
-    os.remove(fname)
-    os.rename('tmp',fname)
-
-
-# In[19]:
-
-
 def td(new,ori,date=None):
     if new > ori:
         c = 'red'
@@ -257,10 +170,6 @@ def td(new,ori,date=None):
     if date is not None:
         return '<td style:"text-align: center;"><span style="color:%s;font-size:20;font-weight:bold;">%s</span><br><span style="color:%s;font-size:15;font-weight:bold;">%s</span><br><span style="font-size:10;color=gray;">(%s)</span></td>'%(c,format(new,'.2f'),c,str_rate(new,ori),date[-5:])
     return '<td style:"text-align: center;"><span style="color:%s;font-size:20;font-weight:bold;">%s</span><br><span style="color:%s;font-size:15;font-weight:bold;">%s</span></td>'%(c,format(new,'.4f'),c,str_rate(new,ori))
-
-
-# In[11]:
-
 
 def html_str(name,gz_all,net,enddate,net1,share,STATE):
     
@@ -284,21 +193,14 @@ def html_str(name,gz_all,net,enddate,net1,share,STATE):
         zjz_str = td(net*share,net1*share,enddate[-5:])
     return s + zjz_str + gz_max_str + gz_min_str + gz_str + jz_str + '</tr>'
 
-def wirte_front(fname,str):
-    f = open(fname,'r')
-    with open('tmp','w') as t:
-        t.write(str)
-        t.write(f.read())
-    f.close()    
-    t.close()
-    os.remove(fname)
-    os.rename('tmp',fname)
+def main():
 
+    with open('fund.ini','r') as f:
+        list=[]
+        for line in f.readlines():
+            kv = line.strip().split()
+            list.append(kv)
 
-# In[21]:
-
-
-def main_html():
     amount_ori = 0
     amount_now = 0
     jz = True
@@ -306,7 +208,6 @@ def main_html():
     with open('fund.html','w') as  f:        
         fstr='<table border="1" style="text-align: center;width:750;"><tr><th style="text-align: center;">基金名</th><th>代码</th><th>最新值</th><th>最高估值</th><th>最低估值</th><th>盘中估值</th><th>单位净值</th></tr>'
         f.write(fstr)
-        # print(fstr)
         for j in list:
             share = float(j[1])
             name,gz_all,net,enddate,net1,gzdate = get(j[0])
@@ -321,12 +222,11 @@ def main_html():
                 amount_now += gz_now * share
                 amount_ori += net * share
             fstr = html_str(name,gz_all,net,enddate,net1,share,STATE)
-            # print(fstr)
             f.write(fstr)
         fstr = '</table>'
         f.write(fstr)
-        # print(fstr)
-        f.write('</html>')    
+        f.write('</html>')
+    s1 = ''
     if amount_now > amount_ori:
         color = 'red'
         s1 = '+'
@@ -340,10 +240,7 @@ def main_html():
     if not jz:
         s3 += '*'
     s += '<html><head><meta charset="utf-8"><style>td{text-align: center;}table{table-layout: fixed;width: max-content;}</style></head>'
-    s += '<div><p><span style="color:$color$;font-size:40;font-weight:900;">%s </span> <span style="color:$color$;font-size:30;font-weight:400;">%s</span> <span style="color:black;font-size:25;">%s</span></p></div>'%(s1,s2,s3)
-    s = s.replace('$color$',color)
-    
-    
+    s += '<div><p><span style="color:%s;font-size:40;font-weight:900;">%s </span> <span style="color:%s;font-size:30;font-weight:400;">%s</span> <span style="color:black;font-size:25;">%s</span></p></div>'%(color,s1,color,s2,s3)
     s += '<h2>'
     if jz:
         s += '净值更新了！'
@@ -354,69 +251,8 @@ def main_html():
     s += '  ' + time.strftime('%m-%d')
     s += '</h2>'
     s += '<br>'
-    # print(s)
     wirte_front('fund.html',s)
 
-
-# In[22]:
-
-
-main_html()
-
-
-# In[14]:
-
-
-def main():
-    amount_ori = 0
-    amount_now = 0
-    s = ''
-    jz = True
-    with open('fund.txt','w') as  f:
-        for j in list:
-            share = float(j[1])
-            name,gz_all,net,enddate,net1,gzdate = get(j[0])
-            STATE,strState = state(gzdate,enddate,gz_all)
-            amount, delta, gz_now, gz_max, gz_min = cal(gz_all,net,net1,share,STATE)
-            if not STATE == 4:
-                jz = False
-            if STATE in [0, 5, 4]:
-                amount_now += net * share
-                amount_ori += net1 * share
-            elif STATE in [1, 2, 3]:
-                amount_now += gz_now * share
-                amount_ori += net * share
-            fstr = str_final(name,gz_all,net,enddate,net1,share,STATE)
-            print(fstr)
-            f.write(fstr)
-    
-    if amount_now > amount_ori:
-        s += '+'
-    s += format(amount_now-amount_ori,'.2f')+' 元 '
-    s += str_rate(amount_now,amount_ori)
-    s += ' ('+gzdate+')'
-    if not jz:
-        s += '*'
-        
-    s += '\n'
-    if jz:
-        s += '净值更新了！'
-    elif STATE in [0, 1, 2, 3, 5]:
-        s += strState
-    else:
-        s += '收盘了！等待更新净值！'
-    s += '  ' + time.strftime('%m-%d')
-    s += '\n----------------------------------------\n'
-    print(s)
-    wirte_front('fund.txt',s)
-
-
-# In[15]:
-
-
-#main()
-
-
-# In[ ]:
+main()
 
 mail()
