@@ -16,7 +16,7 @@ from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from email.header import Header
 
-os.chdir('/home/jupyter/myfund/')
+os.chdir('~/FundMonitor/')
 
 def mail():
     with open('mail.ini','r') as f:
