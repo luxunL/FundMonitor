@@ -18,10 +18,6 @@ from email.header import Header
 import platform
 
 mySys = platform.system()
-if mySys == 'Linux':
-    os.chdir('~/FundMonitor/')
-elif  mySys == 'Windows'
-    os.chdir('~/FundMonitor/')
 if not os.path.exists('mail.ini'):
     if mySys == 'Linux':
         os.chdir('/home/jupyter/FundMonitor/')
