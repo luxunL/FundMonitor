@@ -14,7 +14,9 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
-from email.header import Header     
+from email.header import Header
+
+os.chdir('/home/jupyter/myfund/')
 
 def mail():
     with open('mail.ini','r') as f:
@@ -81,6 +83,7 @@ def str_rate(new,old):
     return s + format((new-old)/old*100,'.2f')+'%'
 
 def wirte_front(fname,string):
+    fname = fname
     f = open(fname,'r')
     with open('tmp','w') as t:
         t.write(string)
@@ -136,12 +139,13 @@ def state(gzdate,enddate,gz_all):
         elif len(gz_all) > 0 :
             s = '交易中!'
             STATE = 1
-        else:
+    else:
+        if int(time.strftime('%H%M')) < 930:
             s = '还没开盘!'
             STATE = 0
-    else:
-        s = '今天可能休市吧!'
-        STATE = 5
+        else :
+            s = '今天可能休市吧!'
+            STATE = 5
             
     return STATE,s
 
@@ -167,10 +171,9 @@ def td(new,ori,date=None):
         c = 'green'
     else:
         c = 'gray'
-    if date is not None:
-        return '<td style:"text-align: center;"><span style="color:%s;font-size:20;font-weight:bold;">%s</span><br><span style="color:%s;font-size:15;font-weight:bold;">%s</span><br><span style="font-size:10;color=gray;">(%s)</span></td>'%(c,format(new,'.2f'),c,str_rate(new,ori),date[-5:])
-    return '<td style:"text-align: center;"><span style="color:%s;font-size:20;font-weight:bold;">%s</span><br><span style="color:%s;font-size:15;font-weight:bold;">%s</span></td>'%(c,format(new,'.4f'),c,str_rate(new,ori))
-
+    if date is None:
+        return '<td style:"text-align: center;"><span style="color:%s;font-size:20;font-weight:bold;">%s</span><br><span style="color:%s;font-size:15;font-weight:bold;">%s</span></td>'%(c,format(new,'.4f'),c,str_rate(new,ori))
+    return '<td style:"text-align: center;"><span style="color:%s;font-size:20;font-weight:bold;">%s</span><br><span style="color:%s;font-size:15;font-weight:bold;">%s</span><br><span style="font-size:10;color=gray;">(%s)</span></td>'%(c,format(new,'.2f'),c,str_rate(new,ori),date)
 def html_str(name,gz_all,net,enddate,net1,share,STATE):
     
     amount, delta, gz_now, gz_max, gz_min = cal(gz_all,net,net1,share,STATE)
@@ -178,7 +181,7 @@ def html_str(name,gz_all,net,enddate,net1,share,STATE):
     s+='<td>'+name.split()[0]+'</td>'
     s+='<td>'+name.split()[1]+'</td>'
     
-    if STATE ==4:
+    if STATE in [0, 4, 5]:
         gz_str = td(gz_all[-1],net1)
         gz_max_str = td(max(gz_all),net1)
         gz_min_str = td(min(gz_all),net1)
@@ -186,11 +189,11 @@ def html_str(name,gz_all,net,enddate,net1,share,STATE):
         gz_str = td(gz_all[-1],net)
         gz_max_str = td(max(gz_all),net)
         gz_min_str = td(min(gz_all),net)
-    jz_str = td(net,net1,enddate)
+    jz_str = td(net,net1,enddate[-5:])
     if STATE in [1, 2, 3]:
         zjz_str = td(gz_all[-1]*share,net*share)
     else:
-        zjz_str = td(net*share,net1*share,enddate[-5:])
+        zjz_str = td(net*share,net1*share,format((net-net1)*share,'.2f'))
     return s + zjz_str + gz_max_str + gz_min_str + gz_str + jz_str + '</tr>'
 
 def main():
@@ -234,13 +237,14 @@ def main():
         color = 'green'
     else:
         color = 'gray'
+    s0 = format(amount_now,'.2f')+' 元 '
     s1 += format(amount_now-amount_ori,'.2f')+' 元 '
     s2 = str_rate(amount_now,amount_ori)
     s3 = ' ('+gzdate+')'
     if not jz:
         s3 += '*'
-    s += '<html><head><meta charset="utf-8"><style>td{text-align: center;}table{table-layout: fixed;width: max-content;}</style></head>'
-    s += '<div><p><span style="color:%s;font-size:40;font-weight:900;">%s </span> <span style="color:%s;font-size:30;font-weight:400;">%s</span> <span style="color:black;font-size:25;">%s</span></p></div>'%(color,s1,color,s2,s3)
+    s += '<html><head><meta charset="utf-8"></head>'
+    s += '<div><p><span style="color:%s;font-size:60;font-weight:900;">%s </span> <span style="color:%s;font-size:40;font-weight:900;">%s </span> <span style="color:%s;font-size:30;font-weight:400;">%s</span> <span style="color:black;font-size:25;">%s</span></p></div>'%(color,s0,color,s1,color,s2,s3)
     s += '<h2>'
     if jz:
         s += '净值更新了！'
