@@ -25,7 +25,7 @@ elif  mySys == 'Windows'
 if not os.path.exists('mail.ini'):
     if mySys == 'Linux':
         os.chdir('/home/jupyter/FundMonitor/')
-    elif  mySys == 'Windows'
+    elif  mySys == 'Windows':
         os.chdir('C:/Users/hasee/Desktop/FundMonitor/')
     else:
         print('路径不正确！')
