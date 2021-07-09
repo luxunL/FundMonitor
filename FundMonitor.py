@@ -28,7 +28,7 @@ if not os.path.exists('mail.ini'):
         sys.exit()
 
 def mail():
-    with open('mail.ini','r') as f:
+    with open('mail.ini','r',encoding="utf-8") as f:
         # 发件人地址，通过控制台创建的发件人地址
         username = f.readline().strip()
         # 发件人密码，通过控制台创建的发件人密码
@@ -93,8 +93,8 @@ def str_rate(new,old):
 
 def wirte_front(fname,string):
     fname = fname
-    f = open(fname,'r')
-    with open('tmp','w') as t:
+    f = open(fname,'r',encoding="utf-8")
+    with open('tmp','w',encoding="utf-8") as t:
         t.write(string)
         t.write(f.read())
     f.close()    
@@ -207,7 +207,7 @@ def html_str(name,gz_all,net,enddate,net1,share,STATE):
 
 def main():
 
-    with open('fund.ini','r') as f:
+    with open('fund.ini','r',encoding="utf-8") as f:
         list=[]
         for line in f.readlines():
             kv = line.strip().split()
@@ -217,7 +217,7 @@ def main():
     amount_now = 0
     jz = True
     s=''
-    with open('fund.html','w') as  f:        
+    with open('fund.html','w',encoding="utf-8") as  f:        
         fstr='<table border="1" style="text-align: center;width:750;"><tr><th style="text-align: center;">基金名</th><th>代码</th><th>最新值</th><th>最高估值</th><th>最低估值</th><th>盘中估值</th><th>单位净值</th></tr>'
         f.write(fstr)
         for j in list:
