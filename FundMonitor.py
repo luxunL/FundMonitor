@@ -15,8 +15,21 @@ from email.mime.image import MIMEImage
 from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from email.header import Header
+import platform
 
-os.chdir('~/FundMonitor/')
+mySys = platform.system()
+if mySys == 'Linux':
+    os.chdir('~/FundMonitor/')
+elif  mySys == 'Windows'
+    os.chdir('~/FundMonitor/')
+if not os.path.exists('mail.ini'):
+    if mySys == 'Linux':
+        os.chdir('/home/jupyter/FundMonitor/')
+    elif  mySys == 'Windows'
+        os.chdir('C:/Users/hasee/Desktop/FundMonitor/')
+    else:
+        print('路径不正确！')
+        sys.exit()
 
 def mail():
     with open('mail.ini','r') as f:
